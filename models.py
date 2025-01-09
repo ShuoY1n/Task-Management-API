@@ -6,13 +6,12 @@ class Item(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    priority = Column(Integer, nullable=False)
     status = Column(String, nullable=False)
     due_date = Column(Date, nullable=False)
     user_id = Column(Integer, nullable=False)
 
     def __repr__(self):
-        return f"<Item(id={self.id}, title={self.title}, description={self.description}, priority={self.priority}, status={self.status}, due_date={self.due_date}, user_id={self.user_id})>"
+        return f"<Item(id={self.id}, title={self.title}, description={self.description}, status={self.status}, due_date={self.due_date}, user_id={self.user_id})>"
 
 class User(Base):
     __tablename__ = "users"
@@ -23,4 +22,4 @@ class User(Base):
     created_at = Column(Date, nullable=False)
 
     def __repr__(self):
-        return f"<User(id={self.id}, username={self.username}, email={self.email}, password={self.password}, created_at={self.created_at})>"
+        return f"<User(id={self.id}, username={self.username}, email={self.email}, password={self.password_hashed}, created_at={self.created_at})>"
