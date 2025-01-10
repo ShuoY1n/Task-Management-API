@@ -3,12 +3,12 @@ from pydantic import BaseModel
 from datetime import date
 from database import SessionLocal
 from typing import List
-from models import Item, User
+from models import Item as ItemDB, User as UserDB
 
 app = FastAPI()
 
 class Item(BaseModel):
-    id: int
+    id: int | None = None
     title: str
     description: str
     status: str
@@ -19,7 +19,7 @@ class Item(BaseModel):
         orm_mode = True
 
 class User(BaseModel):
-    id: int
+    id: int | None = None
     username: str
     email: str
     password_hashed: str
@@ -36,19 +36,19 @@ def index():
 
 @app.get("/items", response_model=list[Item], status_code=status.HTTP_200_OK)
 def get_all_items():
-    items = session.query(Item).all()
+    items = session.query(ItemDB).all()
     return items
 
 @app.get("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
 def get_item(item_id: int):
-    item = session.query(Item).filter(Item.id == item_id).first()
+    item = session.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
     return item
 
 @app.post("/items", response_model=Item, status_code=status.HTTP_201_CREATED)
 def create_item(item: Item):
-    new_item = Item(
+    new_item = ItemDB(
         title=item.title,
         description=item.description,
         status="incomplete",
@@ -58,12 +58,13 @@ def create_item(item: Item):
 
     session.add(new_item)
     session.commit()
+    session.refresh(new_item)
 
     return new_item
 
 @app.put("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
 def update_item(item_id: int, item: Item):
-    item_to_update = session.query(Item).filter(Item.id == item_id).first()
+    item_to_update = session.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item_to_update:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
@@ -75,10 +76,9 @@ def update_item(item_id: int, item: Item):
 
     return item_to_update
 
-
 @app.patch("/items/{item_id}/start", response_model=Item, status_code=status.HTTP_200_OK)
 def start_item(item_id: int):
-    item_to_start = session.query(Item).filter(Item.id == item_id).first()
+    item_to_start = session.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item_to_start:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
@@ -89,7 +89,7 @@ def start_item(item_id: int):
 
 @app.patch("/items/{item_id}/complete", response_model=Item, status_code=status.HTTP_200_OK)
 def complete_item(item_id: int):
-    item_to_complete = session.query(Item).filter(Item.id == item_id).first()
+    item_to_complete = session.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item_to_complete:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
