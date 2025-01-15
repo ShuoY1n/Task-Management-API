@@ -38,7 +38,7 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register_user(db: db_dependency, create_user_request: CreateUserRequest):
+def register_user(db: db_dependency, create_user_request: CreateUserRequest):
     create_user_model = UserDB(
         username=create_user_request.username,
         email=create_user_request.email,
@@ -48,3 +48,5 @@ async def register_user(db: db_dependency, create_user_request: CreateUserReques
     db.add(create_user_model)
     db.commit()
     db.refresh(create_user_model)
+    
+    return create_user_model
