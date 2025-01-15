@@ -28,7 +28,7 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
-session = SessionLocal()
+db = SessionLocal()
 
 @app.get("/")
 def index():
@@ -36,12 +36,12 @@ def index():
 
 @app.get("/items", response_model=list[Item], status_code=status.HTTP_200_OK)
 def get_all_items():
-    items = session.query(ItemDB).all()
+    items = db.query(ItemDB).all()
     return items
 
 @app.get("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
 def get_item(item_id: int):
-    item = session.query(ItemDB).filter(ItemDB.id == item_id).first()
+    item = db.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
     return item
@@ -56,15 +56,15 @@ def create_item(item: Item):
         user_id=item.user_id
     )
 
-    session.add(new_item)
-    session.commit()
-    session.refresh(new_item)
+    db.add(new_item)
+    db.commit()
+    db.refresh(new_item)
 
     return new_item
 
 @app.put("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
 def update_item(item_id: int, item: Item):
-    item_to_update = session.query(ItemDB).filter(ItemDB.id == item_id).first()
+    item_to_update = db.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item_to_update:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
@@ -72,29 +72,29 @@ def update_item(item_id: int, item: Item):
     item_to_update.description = item.description
     item_to_update.due_date = item.due_date
 
-    session.commit()
+    db.commit()
 
     return item_to_update
 
 @app.patch("/items/{item_id}/start", response_model=Item, status_code=status.HTTP_200_OK)
 def start_item(item_id: int):
-    item_to_start = session.query(ItemDB).filter(ItemDB.id == item_id).first()
+    item_to_start = db.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item_to_start:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
     item_to_start.status = "in progress"
-    session.commit()
+    db.commit()
 
     return item_to_start
 
 @app.patch("/items/{item_id}/complete", response_model=Item, status_code=status.HTTP_200_OK)
 def complete_item(item_id: int):
-    item_to_complete = session.query(ItemDB).filter(ItemDB.id == item_id).first()
+    item_to_complete = db.query(ItemDB).filter(ItemDB.id == item_id).first()
     if not item_to_complete:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
     item_to_complete.status = "completed"
-    session.commit()
+    db.commit()
 
     return item_to_complete
     
