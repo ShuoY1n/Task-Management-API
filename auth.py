@@ -10,6 +10,9 @@ from models import User as UserDB
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -71,10 +74,10 @@ def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depen
 def authenticate_user(username: str, password: str, db: db_dependency):
     user = db.query(UserDB).filter(UserDB.username == username).first()
     if user is None:
-        return False
+        return None
     if not bcrypt_context.verify(password, user.password_hashed):
-        return False
-    return True
+        return None
+    return user
 
 def create_access_token(username: str, user_id: int, expires_delta: timedelta):
     encode = {"sub": username, "id": user_id}
