@@ -1,10 +1,15 @@
-from fastapi import FastAPI, status, HTTPException
+from fastapi import FastAPI, status, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import date
 from database import SessionLocal
 from typing import List
 from models import Item as ItemDB, User as UserDB
-from auth import router as auth_router
+from auth import router as auth_router, get_current_user, get_db
+from sqlalchemy.orm import Session
+from typing import Annotated
+
+db_dependency = Annotated[Session, Depends(get_db)]
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 app = FastAPI()
 app.include_router(auth_router)
@@ -37,25 +42,25 @@ def index():
     return {"message": "welcome to the task management API!"}
 
 @app.get("/items", response_model=list[Item], status_code=status.HTTP_200_OK)
-def get_all_items():
-    items = db.query(ItemDB).all()
+def get_all_items(user: user_dependency, db: db_dependency):
+    items = db.query(ItemDB).filter(ItemDB.user_id == user["id"]).all()
     return items
 
 @app.get("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
-def get_item(item_id: int):
-    item = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+def get_item(item_id: int, user: user_dependency, db: db_dependency):
+    item = db.query(ItemDB).filter(ItemDB.id == item_id, ItemDB.user_id == user["id"]).first()
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
     return item
 
 @app.post("/items", response_model=Item, status_code=status.HTTP_201_CREATED)
-def create_item(item: Item):
+def create_item(item: Item, user: user_dependency, db: db_dependency):
     new_item = ItemDB(
         title=item.title,
         description=item.description,
         status="incomplete",
         due_date=item.due_date,
-        user_id=item.user_id
+        user_id=user["id"]
     )
 
     db.add(new_item)
@@ -65,8 +70,8 @@ def create_item(item: Item):
     return new_item
 
 @app.put("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
-def update_item(item_id: int, item: Item):
-    item_to_update = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+def update_item(item_id: int, item: Item, user: user_dependency, db: db_dependency):
+    item_to_update = db.query(ItemDB).filter(ItemDB.id == item_id, ItemDB.user_id == user["id"]).first()
     if not item_to_update:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
@@ -79,8 +84,8 @@ def update_item(item_id: int, item: Item):
     return item_to_update
 
 @app.patch("/items/{item_id}/start", response_model=Item, status_code=status.HTTP_200_OK)
-def start_item(item_id: int):
-    item_to_start = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+def start_item(item_id: int, user: user_dependency, db: db_dependency):
+    item_to_start = db.query(ItemDB).filter(ItemDB.id == item_id, ItemDB.user_id == user["id"]).first()
     if not item_to_start:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
@@ -90,8 +95,8 @@ def start_item(item_id: int):
     return item_to_start
 
 @app.patch("/items/{item_id}/complete", response_model=Item, status_code=status.HTTP_200_OK)
-def complete_item(item_id: int):
-    item_to_complete = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+def complete_item(item_id: int, user: user_dependency, db: db_dependency):
+    item_to_complete = db.query(ItemDB).filter(ItemDB.id == item_id, ItemDB.user_id == user["id"]).first()
     if not item_to_complete:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
@@ -99,15 +104,3 @@ def complete_item(item_id: int):
     db.commit()
 
     return item_to_complete
-    
-@app.post("/users/register")
-def register_user(user: User):
-    return {"message": "user created"}
-
-@app.post("/users/login")
-def login_user(user: User):
-    return {"access_token": "token"}
-
-@app.post("/users/change-password")
-def change_password(user: User):
-    return {"message": "password changed"}
