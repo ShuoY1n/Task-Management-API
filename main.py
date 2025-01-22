@@ -2,7 +2,7 @@ from fastapi import FastAPI, status, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import date
 from database import SessionLocal
-from typing import List
+from typing import List, Optional
 from models import Item as ItemDB, User as UserDB
 from auth import router as auth_router, get_current_user, get_db
 from sqlalchemy.orm import Session
@@ -42,8 +42,14 @@ def index():
     return {"message": "welcome to the task management API!"}
 
 @app.get("/items", response_model=list[Item], status_code=status.HTTP_200_OK)
-def get_all_items(user: user_dependency, db: db_dependency):
-    items = db.query(ItemDB).filter(ItemDB.user_id == user["id"]).all()
+def get_all_items(user: user_dependency, db: db_dependency, status: Optional[str] = None, due_date: Optional[date] = None):
+    if status:
+        items = db.query(ItemDB).filter(ItemDB.user_id == user["id"], ItemDB.status == status).all()
+    elif due_date:
+        items = db.query(ItemDB).filter(ItemDB.user_id == user["id"], ItemDB.due_date == due_date).all()
+    else:
+        items = db.query(ItemDB).filter(ItemDB.user_id == user["id"]).all()
+
     return items
 
 @app.get("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
