@@ -35,8 +35,6 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
-db = SessionLocal()
-
 @app.get("/")
 def index():
     return {"message": "welcome to the task management API!"}
