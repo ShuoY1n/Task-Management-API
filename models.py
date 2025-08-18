@@ -19,7 +19,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String, nullable=False)
     email = Column(String, nullable=False)
-    password = Column(String, nullable=False)
+    password_hashed = Column(String, nullable=False)
     created_at = Column(Date, nullable=False)
 
     def __repr__(self):
