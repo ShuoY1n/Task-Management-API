@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from pydantic import BaseModel
 from datetime import date
+from database import SessionLocal
+from typing import List
+from models import Item, User
 
 app = FastAPI()
 
@@ -26,21 +29,37 @@ class User(BaseModel):
     class Config:
         orm_mode = True
 
+session = SessionLocal()
+
 @app.get("/")
 def index():
     return {"message": "welcome to the task management API!"}
 
-@app.get("/items")
+@app.get("/items", response_model=list[Item], status_code=status.HTTP_200_OK)
 def get_all_items():
-    return {"message": "all tasks"}
+    items = session.query(Item).all()
+
+    return items
 
 @app.get("/items/{item_id}")
 def get_item(item_id: int):
     return {"message": f"task {item_id}"}
 
-@app.post("/items")
+@app.post("/items", response_model=Item, status_code=status.HTTP_201_CREATED)
 def create_item(item: Item):
-    return {"message": "task created", "name": item.title}
+    new_item = Item(
+        title=item.title,
+        description=item.description,
+        priority=item.priority,
+        status="incomplete",
+        due_date=item.due_date,
+        user_id=item.user_id
+    )
+
+    session.add(new_item)
+    session.commit()
+
+    return new_item
 
 @app.put("/items/{item_id}")
 def update_item(item_id: int, item: Item):
