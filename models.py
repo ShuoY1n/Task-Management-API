@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String, Date
 
 class Item(Base):
     __tablename__ = "tasks"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String, nullable=False)
     description = Column(String, nullable=False)
     status = Column(String, nullable=False)
@@ -15,7 +15,7 @@ class Item(Base):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String, nullable=False)
     email = Column(String, nullable=False)
     password_hashed = Column(String, nullable=False)
