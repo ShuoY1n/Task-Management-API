@@ -1,7 +1,6 @@
 from fastapi import FastAPI, status, HTTPException, Depends
 from pydantic import BaseModel
 from datetime import date
-from database import SessionLocal
 from typing import List, Optional
 from models import Item as ItemDB, User as UserDB
 from auth import router as auth_router, get_current_user, get_db
