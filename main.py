@@ -4,8 +4,10 @@ from datetime import date
 from database import SessionLocal
 from typing import List
 from models import Item as ItemDB, User as UserDB
+from auth import router as auth_router
 
 app = FastAPI()
+app.include_router(auth_router)
 
 class Item(BaseModel):
     id: int | None = None
