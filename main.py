@@ -1,4 +1,4 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, HTTPException
 from pydantic import BaseModel
 from datetime import date
 from database import SessionLocal
@@ -11,7 +11,6 @@ class Item(BaseModel):
     id: int
     title: str
     description: str
-    priority: int
     status: str
     due_date: date
     user_id: int
@@ -38,19 +37,20 @@ def index():
 @app.get("/items", response_model=list[Item], status_code=status.HTTP_200_OK)
 def get_all_items():
     items = session.query(Item).all()
-
     return items
 
-@app.get("/items/{item_id}")
+@app.get("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
 def get_item(item_id: int):
-    return {"message": f"task {item_id}"}
+    item = session.query(Item).filter(Item.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+    return item
 
 @app.post("/items", response_model=Item, status_code=status.HTTP_201_CREATED)
 def create_item(item: Item):
     new_item = Item(
         title=item.title,
         description=item.description,
-        priority=item.priority,
         status="incomplete",
         due_date=item.due_date,
         user_id=item.user_id
@@ -61,21 +61,43 @@ def create_item(item: Item):
 
     return new_item
 
-@app.put("/items/{item_id}")
+@app.put("/items/{item_id}", response_model=Item, status_code=status.HTTP_200_OK)
 def update_item(item_id: int, item: Item):
-    return {"message": "task updated"}
+    item_to_update = session.query(Item).filter(Item.id == item_id).first()
+    if not item_to_update:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
-@app.patch("/items/{item_id}/start")
+    item_to_update.title = item.title
+    item_to_update.description = item.description
+    item_to_update.due_date = item.due_date
+
+    session.commit()
+
+    return item_to_update
+
+
+@app.patch("/items/{item_id}/start", response_model=Item, status_code=status.HTTP_200_OK)
 def start_item(item_id: int):
-    return {"message": "task started"}
+    item_to_start = session.query(Item).filter(Item.id == item_id).first()
+    if not item_to_start:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
-@app.patch("/items/{item_id}/complete")
+    item_to_start.status = "in progress"
+    session.commit()
+
+    return item_to_start
+
+@app.patch("/items/{item_id}/complete", response_model=Item, status_code=status.HTTP_200_OK)
 def complete_item(item_id: int):
-    return {"message": "task completed"}
+    item_to_complete = session.query(Item).filter(Item.id == item_id).first()
+    if not item_to_complete:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
 
+    item_to_complete.status = "completed"
+    session.commit()
 
-
-
+    return item_to_complete
+    
 @app.post("/users/register")
 def register_user(user: User):
     return {"message": "user created"}
