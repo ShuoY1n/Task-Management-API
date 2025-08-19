@@ -58,3 +58,26 @@ def register_user(db: db_dependency, create_user_request: CreateUserRequest):
     db.refresh(create_user_model)
     
     return create_user_model
+
+@router.post("/token", response_model=Token)
+def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency):
+    user = authenticate_user(form_data.username, form_data.password, db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    
+    token = create_access_token(user.username, user.id, timedelta(minutes=20))
+    return {"access_token": token, "token_type": "bearer"}
+
+def authenticate_user(username: str, password: str, db: db_dependency):
+    user = db.query(UserDB).filter(UserDB.username == username).first()
+    if user is None:
+        return False
+    if not bcrypt_context.verify(password, user.password_hashed):
+        return False
+    return True
+
+def create_access_token(username: str, user_id: int, expires_delta: timedelta):
+    encode = {"sub": username, "id": user_id}
+    expire = datetime.now(timezone.utc) + expires_delta
+    encode.update({"exp": expire})
+    return jwt.encode(encode, secret_key, algorithm=algorithm)
