@@ -39,6 +39,14 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(db: db_dependency, create_user_request: CreateUserRequest):
+    user = db.query(UserDB).filter(UserDB.username == create_user_request.username).first()
+    if user is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already exists")
+    
+    user_email = db.query(UserDB).filter(UserDB.email == create_user_request.email).first()
+    if user_email is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already exists")
+    
     create_user_model = UserDB(
         username=create_user_request.username,
         email=create_user_request.email,
